@@ -14,7 +14,7 @@ load_dotenv()
 hf_key = os.getenv("HUGGINGFACE_API_KEY")
 client = huggingface_hub.InferenceClient(api_key=hf_key)
 
-reader = PdfReader("data/Stories Of The Prophets By Ibn Kathir.pdf")
+reader = PdfReader("./data/Stories Of The Prophets By Ibn Kathir.pdf")
 pdf_texts = [p.extract_text().strip() for p in reader.pages]
 
 # Filter the empty strings
@@ -57,11 +57,11 @@ import chromadb
 from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
 
 embedding_function = SentenceTransformerEmbeddingFunction()
-# print(embedding_function([token_split_texts[10]]))
+#print(embedding_function([token_split_texts[10]]))
 
 chroma_client = chromadb.Client()
 chroma_collection = chroma_client.create_collection(
-    "microsoft-collection", embedding_function=embedding_function
+    "prophets-collect", embedding_function=embedding_function
 )
 
 # extract the embeddings of the token_split_texts
@@ -69,7 +69,7 @@ ids = [str(i) for i in range(len(token_split_texts))]
 chroma_collection.add(ids=ids, documents=token_split_texts)
 chroma_collection.count()
 
-query = "What was the total revenue for the year?"
+query = "Who was the second last prophet?"
 
 
 results = chroma_collection.query(query_texts=[query], n_results=5)
@@ -80,7 +80,7 @@ retrieved_documents = results["documents"][0]
 #     print("\n")
 
 
-def augment_query_generated(query, model="tinydolphin"):
+def augment_query_generated(query, model="HuggingFaceH4/zephyr-7b-beta"):
     prompt = """You are a helpful expert Muslim research assistant. 
    Provide an example answer to the given question, that might be found in a document like  in a book called Stories Of The Prophets By Ibn Kathir"""
     messages = [
@@ -90,12 +90,12 @@ def augment_query_generated(query, model="tinydolphin"):
         },
         {"role": "user", "content": query},
     ]    
-    response = client.query(
-        model="text-generation",
-        inputs=prompt + "\n\n" + query,
+    response = client.text_generation(
+        model=model,
+        prompt=prompt + "\n\n" + query,
     )
-    content = response.generated_text
-    return content
+    # The response is already a string, no need to access .generated_text
+    return response
 
 
 original_query = "Who was the second last prophet?"
@@ -113,6 +113,7 @@ retrieved_documents = results["documents"][0]
 # for doc in retrieved_documents:
 #     print(word_wrap(doc))
 #     print("")
+
 
 embeddings = chroma_collection.get(include=["embeddings"])["embeddings"]
 umap_transform = umap.UMAP(random_state=0, transform_seed=0).fit(embeddings)

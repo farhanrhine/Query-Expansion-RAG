@@ -1,7 +1,7 @@
 from helper_utils import project_embeddings, word_wrap
 from pypdf import PdfReader
 import os
-from openai import OpenAI
+import huggingface_hub
 from dotenv import load_dotenv
 
 
@@ -13,10 +13,10 @@ import umap
 # Load environment variables from .env file
 load_dotenv()
 
-openai_key = os.getenv("OPENAI_API_KEY")
-client = OpenAI(api_key=openai_key)
+hf_key = os.getenv("HUGGINGFACE_API_KEY")
+client = huggingface_hub.InferenceClient(api_key=hf_key)
 
-reader = PdfReader("data/microsoft-annual-report.pdf")
+reader = PdfReader("./data/Stories Of The Prophets By Ibn Kathir.pdf")
 pdf_texts = [p.extract_text().strip() for p in reader.pages]
 
 # Filter the empty strings
@@ -53,7 +53,7 @@ embedding_function = SentenceTransformerEmbeddingFunction()
 # we then instantiate the Chroma client and create a collection called "microsoft-collection"
 chroma_client = chromadb.Client()
 chroma_collection = chroma_client.create_collection(
-    "microsoft-collection", embedding_function=embedding_function
+    "prophets-collection", embedding_function=embedding_function
 )
 
 # extract the embeddings of the token_split_texts
@@ -62,7 +62,7 @@ ids = [str(i) for i in range(len(token_split_texts))]
 chroma_collection.add(ids=ids, documents=token_split_texts)
 chroma_collection.count()
 
-query = "What was the total revenue for the year?"
+query = "What are the common virtues and characteristics shared by all prophets?"
 
 results = chroma_collection.query(query_texts=[query], n_results=5)
 retrieved_documents = results["documents"][0]
@@ -72,12 +72,12 @@ retrieved_documents = results["documents"][0]
 #     print("\n")
 
 
-def generate_multi_query(query, model="tinydolphin"):
+def generate_multi_query(query, model="HuggingFaceH4/zephyr-7b-beta"):
 
     prompt = """
     You are a knowledgeable Islamic scholar and historian. 
     Your users are inquiring about the Stories Of The Prophets By Ibn Kathir. 
-    For the given question, propose up to five related questions to assist them in finding the information they need. 
+    For the given question, propose up to 5 related questions to assist them in finding the information they need. 
     Provide concise, single-topic questions (without compounding sentences) that cover various aspects of the topic. 
     Ensure each question is complete and directly related to the original inquiry. 
     List each question on a separate line without numbering.
