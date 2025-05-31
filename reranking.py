@@ -1,7 +1,7 @@
 from helper_utils import word_wrap, load_chroma
 from pypdf import PdfReader
 import os
-from openai import OpenAI
+import huggingface_hub
 from dotenv import load_dotenv
 
 
@@ -14,8 +14,8 @@ from langchain_community.document_loaders import PyPDFLoader
 # Load environment variables from .env file
 load_dotenv()
 
-openai_key = os.getenv("OPENAI_API_KEY")
-client = OpenAI(api_key=openai_key)
+hf_key = os.getenv("HUGGINGFACE_API_KEY")
+client = huggingface_hub.InferenceClient(api_key=hf_key)
 
 
 import chromadb
@@ -24,7 +24,7 @@ from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunct
 embedding_function = SentenceTransformerEmbeddingFunction()
 
 
-reader = PdfReader("data/microsoft-annual-report.pdf")
+reader = PdfReader("data/Stories Of The Prophets By Ibn Kathir.pdf")
 pdf_texts = [p.extract_text().strip() for p in reader.pages]
 
 # Filter the empty strings
@@ -50,7 +50,7 @@ for text in character_split_texts:
 
 chroma_client = chromadb.Client()
 chroma_collection = chroma_client.get_or_create_collection(
-    "microsoft-collect", embedding_function=embedding_function
+    "prophets-collect", embedding_function=embedding_function
 )
 
 # extract the embeddings of the token_split_texts
@@ -60,7 +60,7 @@ chroma_collection.add(ids=ids, documents=token_split_texts)
 
 count = chroma_collection.count()
 
-query = "What has been the investment in research and development?"
+query = "Why all prophets were Muslims?"
 
 results = chroma_collection.query(
     query_texts=query, n_results=10, include=["documents", "embeddings"]
@@ -88,15 +88,15 @@ for o in np.argsort(scores)[::-1]:
     print(o + 1)
 
 original_query = (
-    "What were the most important factors that contributed to increases in revenue?"
+    "What are the common virtues and characteristics shared by all prophets?"
 )
 
 generated_queries = [
-    "What were the major drivers of revenue growth?",
-    "Were there any new product launches that contributed to the increase in revenue?",
-    "Did any changes in pricing or promotions impact the revenue growth?",
-    "What were the key market trends that facilitated the increase in revenue?",
-    "Did any acquisitions or partnerships contribute to the revenue growth?",
+    "How did prophets demonstrate patience and perseverance in their missions?",
+    "What moral qualities were emphasized in the stories of the prophets?",
+    "How did the prophets communicate Allah's message to their people?",
+    "What trials and challenges did prophets typically face in their missions?",
+    "How did prophets exemplify faith and submission to Allah's will?",
 ]
 
 # concatenate the original query with the generated queries
@@ -137,12 +137,12 @@ top_documents = [unique_documents[i] for i in top_indices]
 context = "\n\n".join(top_documents)
 
 
-# Generate the final answer using the OpenAI model
-def generate_multi_query(query, context, model="gpt-3.5-turbo"):
+# Generate the final answer using the Hugging Face model
+def generate_multi_query(query, context, model="tinydolphin"):
 
     prompt = f"""
-    You are a knowledgeable financial research assistant. 
-    Your users are inquiring about an annual report. 
+    You are a knowledgeable Islamic  scholar and historian. 
+    Your users are inquiring about the Stories Of The Prophets By Ibn Kathir. 
     """
 
     messages = [
@@ -160,7 +160,7 @@ def generate_multi_query(query, context, model="gpt-3.5-turbo"):
         model=model,
         messages=messages,
     )
-    content = response.choices[0].message.content
+    content = response
     content = content.split("\n")
     return content
 

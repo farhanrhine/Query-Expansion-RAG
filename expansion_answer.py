@@ -1,7 +1,7 @@
 from helper_utils import project_embeddings, word_wrap
 from pypdf import PdfReader
 import os
-from openai import OpenAI
+import huggingface_hub
 from dotenv import load_dotenv
 
 from pypdf import PdfReader
@@ -11,10 +11,10 @@ import umap
 # Load environment variables from .env file
 load_dotenv()
 
-openai_key = os.getenv("OPENAI_API_KEY")
-client = OpenAI(api_key=openai_key)
+hf_key = os.getenv("HUGGINGFACE_API_KEY")
+client = huggingface_hub.InferenceClient(api_key=hf_key)
 
-reader = PdfReader("data/microsoft-annual-report.pdf")
+reader = PdfReader("data/Stories Of The Prophets By Ibn Kathir.pdf")
 pdf_texts = [p.extract_text().strip() for p in reader.pages]
 
 # Filter the empty strings
@@ -80,26 +80,25 @@ retrieved_documents = results["documents"][0]
 #     print("\n")
 
 
-def augment_query_generated(query, model="gpt-3.5-turbo"):
-    prompt = """You are a helpful expert financial research assistant. 
-   Provide an example answer to the given question, that might be found in a document like an annual report."""
+def augment_query_generated(query, model="tinydolphin"):
+    prompt = """You are a helpful expert Muslim research assistant. 
+   Provide an example answer to the given question, that might be found in a document like  in a book called Stories Of The Prophets By Ibn Kathir"""
     messages = [
         {
             "role": "system",
             "content": prompt,
         },
         {"role": "user", "content": query},
-    ]
-
-    response = client.chat.completions.create(
-        model=model,
-        messages=messages,
+    ]    
+    response = client.query(
+        model="text-generation",
+        inputs=prompt + "\n\n" + query,
     )
-    content = response.choices[0].message.content
+    content = response.generated_text
     return content
 
 
-original_query = "What was the total profit for the year, and how does it compare to the previous year?"
+original_query = "Who was the second last prophet?"
 hypothetical_answer = augment_query_generated(original_query)
 
 joint_query = f"{original_query} {hypothetical_answer}"

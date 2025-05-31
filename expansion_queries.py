@@ -72,13 +72,13 @@ retrieved_documents = results["documents"][0]
 #     print("\n")
 
 
-def generate_multi_query(query, model="gpt-3.5-turbo"):
+def generate_multi_query(query, model="tinydolphin"):
 
     prompt = """
-    You are a knowledgeable financial research assistant. 
-    Your users are inquiring about an annual report. 
+    You are a knowledgeable Islamic scholar and historian. 
+    Your users are inquiring about the Stories Of The Prophets By Ibn Kathir. 
     For the given question, propose up to five related questions to assist them in finding the information they need. 
-    Provide concise, single-topic questions (withouth compounding sentences) that cover various aspects of the topic. 
+    Provide concise, single-topic questions (without compounding sentences) that cover various aspects of the topic. 
     Ensure each question is complete and directly related to the original inquiry. 
     List each question on a separate line without numbering.
                 """
@@ -101,7 +101,7 @@ def generate_multi_query(query, model="gpt-3.5-turbo"):
 
 
 original_query = (
-    "What details can you provide about the factors that led to revenue growth?"
+    "can you provided the common features of all the prophets?"
 )
 aug_queries = generate_multi_query(original_query)
 
